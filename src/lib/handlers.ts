@@ -1,16 +1,15 @@
 import {DeleteResult, getConnection, Repository, UpdateResult} from "typeorm";
 import {EntityTarget} from "typeorm/common/EntityTarget";
 
-export class HandlersFactory<t> {
-    private _repository: Repository<t>;
+export class HandlersFactory<Entity> {
+    private _repository: Repository<Entity>;
 
-    constructor(public entity: EntityTarget<t>) {
+    constructor(public entity: EntityTarget<Entity>) {
         this._repository = getConnection().getRepository(entity);
     }
 
     // get all with filers and pagination
-    public async getAll(filters: any, page: number, limit: number, hasPagination?: boolean): Promise<t[]> {
-        console.log('getAll');
+    public async getAll(filters: any, page: number, limit: number, hasPagination?: boolean): Promise<Entity[]> {
         return await this._repository.find(
           Object.assign(
             {},
@@ -24,18 +23,17 @@ export class HandlersFactory<t> {
     }
 
     // get one by id
-    public async getOne(id: number): Promise<t> {
-        console.log('getOne');
+    public async getOne(id: number): Promise<Entity> {
         return await this._repository.findOne(id);
     }
 
     // create new
-    public async create(data: t): Promise<t> {
+    public async create(data: Entity): Promise<Entity> {
         return await this._repository.save(data);
     }
 
     // update by id
-    public async update(id: number, data: t): Promise<UpdateResult> {
+    public async update(id: number, data: Entity): Promise<UpdateResult> {
         return await this._repository.update(id, data);
     }
 

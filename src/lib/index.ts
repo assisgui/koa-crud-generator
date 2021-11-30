@@ -1,0 +1,1 @@
+export { generateRouter } from './generateRouter'

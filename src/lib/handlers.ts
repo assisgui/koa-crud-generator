@@ -1,5 +1,6 @@
-import {DeleteResult, getConnection, Repository, UpdateResult} from "typeorm";
-import {EntityTarget} from "typeorm/common/EntityTarget";
+import { DeleteResult, getConnection, Repository, UpdateResult } from "typeorm";
+import { EntityTarget } from "typeorm/common/EntityTarget";
+import {TPaginationResult} from "./types";
 
 export class HandlersFactory<Entity> {
     private _repository: Repository<Entity>;
@@ -9,8 +10,8 @@ export class HandlersFactory<Entity> {
     }
 
     // get all with filers and pagination
-    public async getAll(filters: any, page: number, limit: number, hasPagination?: boolean): Promise<Entity[]> {
-        return await this._repository.find(
+    public async getAll(filters: any, page: number, limit: number, hasPagination?: boolean): Promise<TPaginationResult<Entity[]> | Entity[]> {
+        const [data, count] = await this._repository.findAndCount(
           Object.assign(
             {},
             filters,
@@ -20,6 +21,13 @@ export class HandlersFactory<Entity> {
             }
           )
         );
+
+        return hasPagination ?{
+            total: count,
+            page,
+            limit,
+            data,
+        } : data;
     }
 
     // get one by id

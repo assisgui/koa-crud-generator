@@ -1,6 +1,7 @@
 import { DeleteResult, getConnection, Repository, UpdateResult } from "typeorm";
 import { EntityTarget } from "typeorm/common/EntityTarget";
-import {TPaginationResult} from "./types";
+import {TFilters, TPaginationResult} from "./types";
+import {FindOneOptions} from "typeorm/find-options/FindOneOptions";
 
 export class HandlersFactory<Entity> {
     private _repository: Repository<Entity>;
@@ -10,19 +11,31 @@ export class HandlersFactory<Entity> {
     }
 
     // get all with filers and pagination
-    public async getAll(filters: any, page: number, limit: number, hasPagination?: boolean): Promise<TPaginationResult<Entity[]> | Entity[]> {
-        const [data, count] = await this._repository.findAndCount(
+    public async getAll({
+      page,
+      limit,
+      hasPagination,
+      relations
+    } : {
+        page: number,
+        limit: number,
+        hasPagination?: boolean
+        relations?: string[]
+    }): Promise<TPaginationResult<Entity[]> | Entity[]> {
+        const [ data, count ] = await this._repository.findAndCount(
           Object.assign(
             {},
-            filters,
             hasPagination && {
                 skip: (page - 1) * limit,
                 take: limit,
+            },
+            relations && {
+                relations
             }
           )
         );
 
-        return hasPagination ?{
+        return hasPagination ? {
             total: count,
             page,
             limit,
@@ -31,22 +44,62 @@ export class HandlersFactory<Entity> {
     }
 
     // get one by id
-    public async getOne(id: number): Promise<Entity> {
-        return await this._repository.findOne(id);
+    public async getOne({ id, relations } : { id: number, relations?: string[] }): Promise<Entity> {
+        return await this._repository.findOne(
+          id,
+          Object.assign({}, relations && { relations })
+        );
     }
 
     // create new
-    public async create(data: Entity): Promise<Entity> {
+    public async create({ data } : { data: Entity }): Promise<Entity> {
         return await this._repository.save(data);
     }
 
     // update by id
-    public async update(id: number, data: Entity): Promise<UpdateResult> {
+    public async update({ id, data } : { id: number, data: Entity }): Promise<UpdateResult> {
         return await this._repository.update(id, data);
     }
 
     // delete by id
-    public async delete(id: number): Promise<DeleteResult> {
+    public async delete({ id } : { id: number }): Promise<DeleteResult> {
         return await this._repository.delete(id);
+    }
+
+    // find with filter and pagination
+    public async search({
+      filters,
+      page,
+      limit,
+      hasPagination,
+      relations
+    } : {
+        filters: TFilters
+        page: number
+        limit: number
+        hasPagination?: boolean
+        relations?: string[]
+    }): Promise<TPaginationResult<Entity[]> | Entity[]> {
+        const [data, count] = await this._repository.findAndCount(
+          Object.assign(
+            {},
+            { where: filters },
+            hasPagination && {
+                skip: (page - 1) * limit,
+                take: limit,
+            },
+            relations && {
+                relations
+            }
+          )
+        );
+
+        return hasPagination
+          ? {
+            total: count,
+            page,
+            limit,
+            data,
+        } : data;
     }
 }

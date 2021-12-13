@@ -1,27 +1,34 @@
-import {Handler, MultipartOptions, OutputValidation} from 'koa-joi-router';
-import * as Joi from "joi";
-import * as CoBody from "co-body";
+import { Handler, MultipartOptions, OutputValidation } from 'koa-joi-router'
+import * as Joi from "joi"
+import * as CoBody from "co-body"
 
-type TMethodOptions = {
+export type TDto = {
+  header?: Joi.SchemaLike | undefined
+  query?: Joi.SchemaLike | undefined
+  params?: Joi.SchemaLike | undefined
+  body?: Joi.SchemaLike | undefined
+  maxBody?: number | string | undefined
+  failure?: number | undefined
+  type?: 'form' | 'json' | 'multipart' | undefined
+  formOptions?: CoBody.Options | undefined
+  jsonOptions?: CoBody.Options | undefined
+  multipartOptions?: MultipartOptions | undefined
+  output?: { [status: string]: OutputValidation } | undefined
+  continueOnError?: boolean | undefined
+  validateOptions?: Joi.ValidationOptions | undefined
+}
+
+export interface TFilters {
+  type: 'number' | 'string' | 'boolean' | 'date'
+  field: string
+}
+
+type TEndpointOptions = {
   enabled?: boolean
   overrideHandler?: Handler
   extraHandlers?: Handler[]
   pre?: Handler
-  dto?: | {
-    header?: Joi.SchemaLike | undefined;
-    query?: Joi.SchemaLike | undefined;
-    params?: Joi.SchemaLike | undefined;
-    body?: Joi.SchemaLike | undefined;
-    maxBody?: number | string | undefined;
-    failure?: number | undefined;
-    type?: 'form' | 'json' | 'multipart' | undefined;
-    formOptions?: CoBody.Options | undefined;
-    jsonOptions?: CoBody.Options | undefined;
-    multipartOptions?: MultipartOptions | undefined;
-    output?: { [status: string]: OutputValidation } | undefined;
-    continueOnError?: boolean | undefined;
-    validateOptions?: Joi.ValidationOptions | undefined;
-  } | undefined;
+  dto?: TDto | undefined
 }
 
 type TPaginationOptions = {
@@ -32,26 +39,38 @@ type TPaginationOptions = {
   limitMax?: number
 }
 
-interface TGetAllOptions extends TMethodOptions {
-  pagination?: TPaginationOptions
+interface TGetAllOptions extends TEndpointOptions {
+  pagination?: TPaginationOptions,
+  relations?: string[] | undefined
+}
+
+interface TSearchOptions extends TEndpointOptions {
+  pagination?: TPaginationOptions,
+  filters?: TFilters[]
+  relations?: string[] | undefined
+}
+
+interface TGetOneOptions extends TEndpointOptions {
+  relations?: string[] | undefined
 }
 
 export type TGenerateRouter = {
   entity: Function
   basePath?: string
-  methods? : {
+  endpoints? : {
     getAll?: TGetAllOptions
-    getOne?: TMethodOptions
-    post?: TMethodOptions
-    put?: TMethodOptions
-    delete?: TMethodOptions
+    search?: TSearchOptions
+    getOne?: TGetOneOptions
+    post?: TEndpointOptions
+    put?: TEndpointOptions
+    delete?: TEndpointOptions
   }
 }
 
 export const defaultOptions: TGenerateRouter = {
   entity: null,
   basePath: null,
-  methods: {
+  endpoints: {
     getAll: {
       enabled: true,
       pagination: {
@@ -60,10 +79,23 @@ export const defaultOptions: TGenerateRouter = {
         limit: 10,
         limitMin: 1,
         limitMax: 100
-      }
+      },
+      relations: []
+    },
+    search: {
+      enabled: true,
+      pagination: {
+        enabled: true,
+        page: 1,
+        limit: 10,
+        limitMin: 1,
+        limitMax: 100
+      },
+      relations: []
     },
     getOne: {
-      enabled: true
+      enabled: true,
+      relations: []
     },
     post: {
       enabled: true

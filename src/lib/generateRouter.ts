@@ -7,7 +7,10 @@ import { Joi } from "koa-joi-router";
 
 export const generateRouter = (options: TGenerateRouter[]) => {
   const router = koaRouter()
-  options.map((option) => {
+  options.forEach((option) => {
+    const config = {
+      [option.entity.name]: option
+    }
     const {
       endpoints: {
         getAll,
@@ -18,7 +21,7 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         delete: deleteMethod
       },
       basePath
-    } = cloneDeep(merge(defaultOptions, option))
+    } = cloneDeep(merge(cloneDeep(defaultOptions), config[option.entity.name]))
 
     const handler = new HandlersFactory(option.entity)
 
@@ -41,31 +44,41 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         ? [...(getAll.extraHandlers || []), getAll.overrideHandler] :
         [
           ...(getAll.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.getAll({
+          async (ctx: Context) => ctx.body = await handler.getAll({
             page: Number(ctx.request.query.page || getAll.pagination.page),
             limit: Number(ctx.request.query.limit || getAll.pagination.limit),
             hasPagination: getAll.pagination.enabled,
             relations: getAll.relations
-          })}
+          })
         ]
     })
 
     !!search?.enabled && router.route({
       method: 'post',
       path: `/${basePath ? basePath : option.entity.name.toLocaleLowerCase()}/search`,
-      validate: search.dto,
+      validate: merge(
+        search.pagination.enabled && {
+          query: {
+            page: Joi.number().min(1),
+            limit: Joi.number()
+              .min(search.pagination.limitMin)
+              .max(search.pagination.limitMax)
+          },
+        },
+        search.dto
+      ),
       pre: search.pre,
       handler: search?.overrideHandler
         ? [...(search.extraHandlers || []), search.overrideHandler] :
         [
           ...(search.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.search({
-            filters: ctx.request.body,
+          async (ctx: Context) => ctx.body = await handler.search({
+            filters: ctx.request.body as any,
             page: Number(ctx.request.query.page || search.pagination.page),
             limit: Number(ctx.request.query.limit || search.pagination.limit),
             hasPagination: search.pagination.enabled,
             relations: search.relations
-          })}
+          })
         ]
     })
 
@@ -83,7 +96,7 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         ? [...(getOne.extraHandlers || []), getOne.overrideHandler] :
         [
           ...(getOne.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.getOne({ id: ctx.params.id, relations: getOne.relations }) }
+          async (ctx: Context) => ctx.body = await handler.getOne({ id: ctx.params.id, relations: getOne.relations })
         ]
     })
 
@@ -96,7 +109,7 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         ? [...(post.extraHandlers || []), post.overrideHandler] :
         [
           ...(post.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.create({ data : ctx.request.body })}
+          async (ctx: Context) => ctx.body = await handler.create({ data : ctx.request.body })
         ]
     })
 
@@ -114,7 +127,7 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         ? [...(put.extraHandlers || []), put.overrideHandler] :
         [
           ...(put.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.update({ id: ctx.params.id, data: ctx.request.body })}
+          async (ctx: Context) => ctx.body = await handler.update({ id: ctx.params.id, data: ctx.request.body })
         ]
     })
 
@@ -127,11 +140,9 @@ export const generateRouter = (options: TGenerateRouter[]) => {
         ? [...(deleteMethod.extraHandlers || []), deleteMethod.overrideHandler] :
         [
           ...(deleteMethod.extraHandlers || []),
-          async (ctx: Context) => { ctx.body = await handler.delete({ id: ctx.params.id })}
+          async (ctx: Context) => ctx.body = await handler.delete({ id: ctx.params.id })
         ]
     })
-
-    return router
   })
 
   return router.middleware()

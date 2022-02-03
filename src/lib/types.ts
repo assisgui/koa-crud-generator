@@ -1,5 +1,6 @@
 import { Handler, MultipartOptions, OutputValidation } from 'koa-joi-router'
 import * as Joi from "joi"
+import { Joi as joiRouter } from "koa-joi-router";
 import * as CoBody from "co-body"
 
 export type TDto = {
@@ -44,10 +45,11 @@ interface TGetAllOptions extends TEndpointOptions {
   relations?: string[] | undefined
 }
 
-interface TSearchOptions extends TEndpointOptions {
+interface TSearchOptions extends Pick<TEndpointOptions, 'enabled' | 'overrideHandler' | 'extraHandlers' | 'pre'> {
   pagination?: TPaginationOptions,
   filters?: TFilters[]
   relations?: string[] | undefined
+  dto?: any
 }
 
 interface TGetOneOptions extends TEndpointOptions {
@@ -91,7 +93,11 @@ export const defaultOptions: TGenerateRouter = {
         limitMin: 1,
         limitMax: 100
       },
-      relations: []
+      relations: [],
+      dto: {
+        type: 'json',
+        body: joiRouter.any()
+      }
     },
     getOne: {
       enabled: true,

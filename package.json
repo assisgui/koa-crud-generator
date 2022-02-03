@@ -12,6 +12,7 @@
     "koa": "^2.13.4",
     "koa-joi-router": "^8.0.0",
     "lodash": "^4.17.21",
+    "mongodb": "^3.7.3",
     "nodemon": "^2.0.15",
     "reflect-metadata": "^0.1.10",
     "sqlite": "^4.0.23",

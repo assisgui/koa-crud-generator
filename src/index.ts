@@ -3,7 +3,6 @@ import { createConnection } from 'typeorm'
 import { User } from './entity/User'
 import * as Koa from 'koa'
 import { generateRouter } from './lib'
-import { Joi } from 'koa-joi-router'
 import UserDto from "./entity/User.dto";
 import {Post} from "./entity/Post";
 
@@ -11,7 +10,7 @@ createConnection().then(async connection => {
   const app = new Koa()
 
   // TODO: changed first param to accept json with
-  //  [] filters to getAll -- PENSAR NESSE QUE TA OSSO
+  //  [] error handling
   //  [] add tests and circleci
   // TODO: SUPER PLUS: add swagger documentation or insomnia integration (or both)
 
@@ -26,10 +25,6 @@ createConnection().then(async connection => {
           },
           search: {
             relations: ['posts'],
-            filters: [{
-              field: 'name',
-              type: 'string'
-            }]
           },
           post: { dto: UserDto.post },
           put: { dto: UserDto.put }
@@ -45,7 +40,7 @@ createConnection().then(async connection => {
             relations: ['user']
           },
           search: {
-            relations: ['user'],
+            //relations: ['user']
           },
         }
       }
